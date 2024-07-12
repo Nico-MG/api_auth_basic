@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
@@ -26,6 +27,7 @@
     "@types/jest": "^29.5.12",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
     "sequelize-cli": "^6.6.2"
   }
 }
