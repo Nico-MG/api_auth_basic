@@ -1,3 +1,6 @@
+import UserExists from "../errors/userExists.js";
+import PasswordNotMatch from "../errors/passwordNotMatch.js";
+import UserNotFound from "../errors/userNotFound.js";
 import db from "../dist/db/models/index.js";
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
@@ -5,10 +8,7 @@ import { Op } from "sequelize";
 const createUser = async (req) => {
     const { name, email, password, password_second, cellphone } = req.body;
     if (password !== password_second) {
-        return {
-            code: 400,
-            message: "Passwords do not match",
-        };
+        throw new PasswordNotMatch();
     }
     const user = await db.User.findOne({
         where: {
@@ -16,10 +16,7 @@ const createUser = async (req) => {
         },
     });
     if (user) {
-        return {
-            code: 400,
-            message: "User already exists",
-        };
+        throw new UserExists();
     }
 
     const encryptedPassword = await bcrypt.hash(password, 10);
@@ -31,10 +28,7 @@ const createUser = async (req) => {
         cellphone,
         status: true,
     });
-    return {
-        code: 200,
-        message: "User created successfully with ID: " + newUser.id,
-    };
+    return newUser;
 };
 
 const bulkCreateUsers = async (req) => {
@@ -44,36 +38,36 @@ const bulkCreateUsers = async (req) => {
 
     for (const user of users) {
         const userReq = { body: user };
-        const { code } = await createUser(userReq);
-        code === 200 ? usersInsertedCount++ : usersNotInsertedCount++;
+        try {
+            await createUser(userReq);
+            usersInsertedCount++;
+        } catch (error) {
+            usersNotInsertedCount++;
+        }
     }
-    return {
-        code: 200,
-        message: `${usersInsertedCount} users created successfully, ${usersNotInsertedCount} users not inserted`,
-    };
+    return {usersInsertedCount, usersNotInsertedCount};
 };
 
 const getUserById = async (id) => {
-    return {
-        code: 200,
-        message: await db.User.findOne({
+
+    const user = await db.User.findOne({
             where: {
                 id: id,
                 status: true,
             },
-        }),
-    };
+        });
+    if (!user) {
+        throw new UserNotFound();
+    }
+    return user;
 };
 
 const getAllUsers = async () => {
-    return {
-        code: 200,
-        message: await db.User.findAll({
+    return await db.User.findAll({
             where: {
                 status: true,
             },
-        }),
-    };
+        });
 };
 
 const findUsers = async (req) => {
@@ -107,13 +101,10 @@ const findUsers = async (req) => {
               ]
             : [];
 
-    return {
-        code: 200,
-        message: await db.User.findAll({
+    return await db.User.findAll({
             where: userQuery,
             include: includeObj,
-        }),
-    };
+        });
 };
 
 const updateUser = async (req) => {
@@ -123,6 +114,9 @@ const updateUser = async (req) => {
             status: true,
         },
     });
+    if (!user) {
+        throw new UserNotFound();
+    }
     const payload = {};
     payload.name = req.body.name ?? user.name;
     payload.password = req.body.password
@@ -134,24 +128,18 @@ const updateUser = async (req) => {
             id: req.params.id,
         },
     });
-    return {
-        code: 200,
-        message: "User updated successfully",
-    };
 };
 
 const deleteUser = async (id) => {
-    /* await db.User.destroy({
-        where: {
-            id: id
-        }
-    }); */
     const user = db.User.findOne({
         where: {
             id: id,
             status: true,
         },
     });
+    if (!user) {
+        throw new UserNotFound();
+    }
     await db.User.update(
         {
             status: false,
@@ -162,10 +150,6 @@ const deleteUser = async (id) => {
             },
         }
     );
-    return {
-        code: 200,
-        message: "User deleted successfully",
-    };
 };
 
 export default {
