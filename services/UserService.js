@@ -33,19 +33,19 @@ const createUser = async (req) => {
 
 const bulkCreateUsers = async (req) => {
 	const users = req.body;
-	let usersInsertedCount = 0;
-	let usersNotInsertedCount = 0;
+	let usersValid = 0;
+	let usersInvalid = 0;
 
 	for (const user of users) {
 		const userReq = { body: user };
 		try {
 			await createUser(userReq);
-			usersInsertedCount++;
+			usersValid++;
 		} catch (error) {
-			usersNotInsertedCount++;
+			usersInvalid++;
 		}
 	}
-	return { usersInsertedCount, usersNotInsertedCount };
+	return { usersValid, usersInvalid };
 };
 
 const getUserById = async (id) => {
