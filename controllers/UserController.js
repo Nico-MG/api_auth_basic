@@ -39,7 +39,7 @@ router.post(
 			return res
 				.status(201)
 				.json({
-					message: `${response.usersInsertedCount} users created successfully, ${response.usersNotInsertedCount} users not inserted`,
+					message: `Cantidad de usuarios creados: ${response.usersValid}, cantidad de usuarios no creados: ${response.usersInvalid}`,
 				});
 		} catch (error) {
 			return res.status(500).json({ message: "Error de servidor" });
